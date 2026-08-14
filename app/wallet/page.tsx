@@ -6,6 +6,7 @@ import { api } from "@/convex/_generated/api";
 import { useEffect, useState } from "react";
 
 const money = (kobo: number) => `₦${(kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`;
+type TransactionRow = { _id: string; description: string; amountKobo: number; type: "debit" | "credit"; status: string };
 
 export default function WalletPage() {
   const wallet = useQuery(api.wallets.get);
@@ -29,7 +30,7 @@ export default function WalletPage() {
       {message && <div className="alert success">{message}</div>}
       <div className="grid" style={{marginTop:20}}>
         <section className="card"><h2>Add funds</h2><p className="muted">This creates a pending funding request. Connect your payment provider webhook before treating it as paid.</p><input className="input" type="number" min="100" step="1" value={amount} onChange={e=>setAmount(e.target.value)} /><button className="btn" onClick={fund}>Create funding request</button></section>
-        <section className="card"><h2>Transactions</h2>{transactions.length === 0 ? <div className="empty">No transactions yet.</div> : <table><thead><tr><th>Description</th><th>Amount</th><th>Status</th></tr></thead><tbody>{transactions.map(t=><tr key={t._id}><td>{t.description}</td><td>{t.type === "debit" ? "−" : "+"}{money(t.amountKobo)}</td><td><span className="badge">{t.status}</span></td></tr>)}</tbody></table>}</section>
+        <section className="card"><h2>Transactions</h2>{transactions.length === 0 ? <div className="empty">No transactions yet.</div> : <table><thead><tr><th>Description</th><th>Amount</th><th>Status</th></tr></thead><tbody>{(transactions as TransactionRow[]).map(t=><tr key={t._id}><td>{t.description}</td><td>{t.type === "debit" ? "−" : "+"}{money(t.amountKobo)}</td><td><span className="badge">{t.status}</span></td></tr>)}</tbody></table>}</section>
       </div>
     </SignedIn>
   </>;
