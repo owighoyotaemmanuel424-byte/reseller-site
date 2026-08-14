@@ -7,6 +7,7 @@ import { api } from "@/convex/_generated/api";
 import { useState } from "react";
 
 const money = (kobo: number) => `₦${(kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`;
+type ProductRow = { _id: string; category?: string; name: string; description?: string; priceKobo: number };
 
 export default function Home() {
   const { isSignedIn } = useUser();
@@ -40,7 +41,7 @@ export default function Home() {
     </section>
     {message && <div className="alert success">{message}</div>}
     <section className="grid">
-      {products.map((p) => <article className="card" key={p._id}>
+      {(products as ProductRow[]).map((p) => <article className="card" key={p._id}>
         <span className="badge">{p.category ?? "Digital"}</span>
         <h2>{p.name}</h2>
         <p className="muted">{p.description ?? "Digital product available through MultiKartX."}</p>
