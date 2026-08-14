@@ -4,7 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "convex codegen && next build",
+    "build": "next build",
+    "build:convex": "convex deploy --cmd 'npm run build'",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
