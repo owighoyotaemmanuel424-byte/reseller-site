@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { UserButton } from "@clerk/nextjs";
+import { SignInButton, SignUpButton, Show, UserButton } from "@clerk/nextjs";
 import { Providers } from "@/components/Providers";
 import "./globals.css";
 
@@ -20,7 +20,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               <Link href="/">Store</Link>
               <Link href="/wallet">Wallet</Link>
               <Link href="/orders">Orders</Link>
-              <UserButton afterSignOutUrl="/" />
+              <Show when="signed-out">
+                <SignInButton mode="modal"><button className="btn secondary">Sign in</button></SignInButton>
+                <SignUpButton mode="modal"><button className="btn">Sign up</button></SignUpButton>
+              </Show>
+              <Show when="signed-in">
+                <UserButton afterSignOutUrl="/" />
+              </Show>
             </nav>
           </header>
           <main>{children}</main>
