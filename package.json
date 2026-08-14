@@ -4,12 +4,13 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "build:convex": "convex deploy --cmd 'npm run build'",
+    "build": "convex deploy --cmd 'next build'",
+    "build:next": "next build",
+    "build:convex": "convex deploy --cmd 'next build'",
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "cf:build": "npm run build && opennextjs-cloudflare build",
+    "cf:build": "npm run build:next && opennextjs-cloudflare build",
     "cf:deploy": "npm run cf:build && wrangler deploy"
   },
   "dependencies": {
