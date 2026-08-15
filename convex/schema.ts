@@ -1,8 +1,6 @@
 import { defineSchema, defineTable } from "convex/server";
 import { v } from "convex/values";
 
-// Schema restored to a compatible structure. Additional authorization
-// checks should be implemented inside Convex queries and mutations.
 export default defineSchema({
   users: defineTable({
     email: v.string(),
