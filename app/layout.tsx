@@ -16,7 +16,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <header className="topbar">
             <Link href="/" className="brand">MultiKartX</Link>
             <nav>
-              <Link href="/">Store</Link>
+              <Link href=">/">Store</Link>
               <Link href="/wallet">Wallet</Link>
               <Link href="/orders">Orders</Link>
               <Link href="/sign-in"><button className="btn secondary">Sign in</button></Link>
