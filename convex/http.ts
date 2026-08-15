@@ -28,18 +28,32 @@ http.route({
     const expected = await hmacSha512(secret, body);
     if (!timingSafeEqualHex(signature.toLowerCase(), expected)) return new Response("Invalid signature", { status: 401 });
 
-    const event = JSON.parse(body) as {
-      event?: string;
-      data?: { reference?: string; amount?: number; currency?: string; status?: string };
-    };
-    if (event.event === "charge.success" && event.data?.reference) {
-      if (event.data.currency && event.data.currency !== "NGN") return new Response("Unsupported currency", { status: 400 });
-      await ctx.runMutation(internal.paystack.applyWebhookPayment, {
-        reference: event.data.reference,
-        amountKobo: Number(event.data.amount ?? 0),
-        successful: event.data.status === "success",
-      });
+    let event: any;
+    try {
+      event = JSON.parse(body);
+    } catch (e) {
+      return new Response("Malformed JSON", { status: 400 });
     }
+
+    if (!event || typeof event !== "object" || !event.event || !event.data) {
+      return new Response("Malformed event", { status: 400 });
+    }
+
+    const eventId = event.id ?? `${event.event}:${event.data?.reference ?? Math.random().toString(36).slice(2)}`;
+
+    // route processing to a single idempotent handler
+    try {
+      await ctx.runMutation(internal.paystack.processWebhookEvent, {
+        eventId,
+        eventName: event.event,
+        data: event.data,
+      });
+    } catch (e) {
+      // Log the error server-side (Convex events/logging recommended) and return 500 so Paystack can retry
+      console.error('Webhook processing error', e);
+      return new Response("Internal error", { status: 500 });
+    }
+
     return new Response("OK", { status: 200 });
   }),
 });
