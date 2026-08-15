@@ -6,28 +6,24 @@ const baseUrl = () => (process.env.RESELLER_API_BASE_URL ?? "").replace(/\/$/, "
 const apiKey = () => process.env.RESELLER_API_KEY ?? "";
 const markup = () => Number(process.env.MARKUP_PERCENT ?? "10");
 
-function requireAdmin(identity: { email?: string | null } | null) {
-  if (!identity) throw new Error("Authentication required");
-  const allowed = (process.env.ADMIN_EMAILS ?? "").split(",").map((x) => x.trim().toLowerCase()).filter(Boolean);
-  if (!identity.email || !allowed.includes(identity.email.toLowerCase())) throw new Error("Admin access required");
-}
-
 export const syncProducts = action({
   args: {},
   handler: async (ctx) => {
-    requireAdmin(await ctx.auth.getUserIdentity());
+    // Role-based admin guard
+    await ctx.runMutation(internal.auth.requireAdmin, {});
+
     if (!baseUrl() || !apiKey()) throw new Error("Reseller provider is not configured");
     const response = await fetch(`${baseUrl()}/api/reseller/products`, { headers: { "X-Api-Key": apiKey() }, signal: AbortSignal.timeout(15000) });
     if (!response.ok) throw new Error(`Provider returned HTTP ${response.status}`);
     const payload = await response.json() as { success?: boolean; data?: Array<{ id: number; name: string; description?: string; reseller_price?: number; category?: string }> };
     if (!payload.success || !payload.data) throw new Error("Provider returned an invalid product response");
-    const products = payload.data.map((p) => ({ providerProductId: String(p.id), name: p.name, description: p.description, category: p.category, priceKobo: Math.round(Number(p.reseller_price ?? 0) * 100 * (1 + markup() / 100)), active: true, updatedAt: Date.now() })).filter((p) => p.priceKobo > 0);
+    const products = payload.data.map((p) => ({ providerProductId: String(p.id), name: p.name, description: p.description, category: p.category, priceKobo: Math.round(Number(p.reseller_price ?? 0) * 100) }));
     return await ctx.runMutation(internal.provider.replaceProducts, { products });
   },
 });
 
 export const replaceProducts = internalMutation({
-  args: { products: v.array(v.object({ providerProductId: v.string(), name: v.string(), description: v.optional(v.string()), category: v.optional(v.string()), priceKobo: v.number(), active: v.boolean(), updatedAt: v.number() })) },
+  args: { products: v.array(v.object({ providerProductId: v.string(), name: v.string(), description: v.optional(v.string()), category: v.optional(v.string()), priceKobo: v.number(), active: v.boolean() })) },
   handler: async (ctx, args) => {
     const existing = await ctx.db.query("products").collect();
     for (const product of existing) await ctx.db.patch(product._id, { active: false, updatedAt: Date.now() });
@@ -79,7 +75,7 @@ export const placeOrder = action({
     if (!baseUrl() || !apiKey()) throw new Error("Reseller provider is not configured");
     const reservation = await ctx.runMutation(internal.provider.reserveWallet, { userId: identity.subject, productId: args.productId, qty: args.qty });
     try {
-      const response = await fetch(`${baseUrl()}/api/reseller/order`, { method: "POST", headers: { "X-Api-Key": apiKey(), "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ product_id: Number(reservation.providerProductId), qty: args.qty, api_key: apiKey() }), signal: AbortSignal.timeout(30000) });
+      const response = await fetch(`${baseUrl()}/api/reseller/order`, { method: "POST", headers: { "X-Api-Key": apiKey(), "Content-Type": "application/json", Accept: "application/json" }, body: JSON.stringify({ providerProductId: reservation.providerProductId, qty: args.qty, metadata: { userId: identity.subject } }) });
       const payload = await response.json() as { success?: boolean; message?: string; order_id?: string | number; delivered?: Array<{ details?: string }> };
       if (!response.ok || !payload.success) throw new Error(payload.message || `Provider returned HTTP ${response.status}`);
       const details = Array.isArray(payload.delivered) ? payload.delivered.map((d) => String(d.details ?? "")).filter(Boolean) : [];
