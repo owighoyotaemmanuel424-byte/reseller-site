@@ -1,57 +1,7 @@
 "use client";
 
-import { SignedIn, SignedOut, SignInButton } from "@clerk/nextjs";
-import { useAction, useMutation, useQuery } from "convex/react";
+import { useConvexAuth, useAction, useMutation, useQuery } from "convex/react";
 import { api } from "@/convex/_generated/api";
 import { useEffect, useState } from "react";
-
-const money = (kobo: number) => `₦${(kobo / 100).toLocaleString("en-NG", { minimumFractionDigits: 2 })}`;
-type TransactionRow = { _id: string; description: string; amountKobo: number; type: "debit" | "credit"; status: string };
-
-export default function WalletPage() {
-  const wallet = useQuery(api.wallets.get);
-  const transactions = useQuery(api.wallets.transactions) ?? [];
-  const ensure = useMutation(api.wallets.ensure);
-  const initializePaystack = useAction(api.paystack.initialize);
-  const verifyPaystack = useAction(api.paystack.verify);
-  const [amount, setAmount] = useState("1000");
-  const [message, setMessage] = useState("");
-  const [busy, setBusy] = useState(false);
-  useEffect(() => { ensure({}).catch(() => undefined); }, [ensure]);
-
-  async function fund() {
-    setMessage("");
-    const naira = Number(amount);
-    if (!Number.isFinite(naira) || naira < 100) { setMessage("Minimum funding is ₦100"); return; }
-    setBusy(true);
-    try {
-      const result = await initializePaystack({ amountKobo: Math.round(naira * 100) });
-      window.location.assign(result.authorizationUrl);
-    } catch (e) {
-      setMessage(e instanceof Error ? e.message : "Unable to initialize Paystack payment");
-      setBusy(false);
-    }
-  }
-
-  useEffect(() => {
-    const reference = new URLSearchParams(window.location.search).get("reference");
-    if (!reference) return;
-    setBusy(true);
-    verifyPaystack({ reference })
-      .then((result) => setMessage(result.status === "success" ? "Payment confirmed. Your wallet has been credited." : `Payment status: ${result.status}`))
-      .catch((e) => setMessage(e instanceof Error ? e.message : "Unable to verify payment"))
-      .finally(() => setBusy(false));
-  }, [verifyPaystack]);
-
-  return <>
-    <SignedOut><div className="card"><h1>Wallet</h1><p className="muted">Sign in to access your wallet.</p><SignInButton mode="modal"><button className="btn">Sign in</button></SignInButton></div></SignedOut>
-    <SignedIn>
-      <div className="row"><div><h1>Wallet</h1><p className="muted">Securely fund your MultiKartX wallet with Paystack.</p></div><div className="card"><strong>Balance</strong><div className="price">{money(wallet?.balanceKobo ?? 0)}</div></div></div>
-      {message && <div className="alert success">{message}</div>}
-      <div className="grid" style={{marginTop:20}}>
-        <section className="card"><h2>Add funds</h2><p className="muted">You will be redirected to Paystack to complete your payment. Your wallet is credited only after the payment is verified.</p><input className="input" type="number" min="100" step="1" value={amount} onChange={e=>setAmount(e.target.value)} /><button className="btn" onClick={fund} disabled={busy}>{busy ? "Processing…" : "Pay with Paystack"}</button></section>
-        <section className="card"><h2>Transactions</h2>{transactions.length === 0 ? <div className="empty">No transactions yet.</div> : <table><thead><tr><th>Description</th><th>Amount</th><th>Status</th></tr></thead><tbody>{(transactions as TransactionRow[]).map(t=><tr key={t._id}><td>{t.description}</td><td>{t.type === "debit" ? "−" : "+"}{money(t.amountKobo)}</td><td><span className="badge">{t.status}</span></td></tr>)}</tbody></table>}</section>
-      </div>
-    </SignedIn>
-  </>;
-}
+const money=(kobo:number)=>`₦${(kobo/100).toLocaleString("en-NG",{minimumFractionDigits:2})}`;
+export default function WalletPage(){const {isAuthenticated}=useConvexAuth();const wallet=useQuery(api.wallets.get);const transactions=useQuery(api.wallets.transactions)??[];const ensure=useMutation(api.wallets.ensure);const initializePaystack=useAction(api.paystack.initialize);const verifyPaystack=useAction(api.paystack.verify);const [amount,setAmount]=useState("1000");const [message,setMessage]=useState("");const [busy,setBusy]=useState(false);useEffect(()=>{ensure({}).catch(()=>undefined)},[ensure]);async function fund(){setBusy(true);try{const result=await initializePaystack({amountKobo:Math.round(Number(amount)*100)});window.location.assign(result.authorizationUrl)}catch(e){setMessage(e instanceof Error?e.message:"Unable") ;setBusy(false)}}useEffect(()=>{const reference=new URLSearchParams(window.location.search).get("reference");if(reference)verifyPaystack({reference}).then(()=>setMessage("Payment verified")).catch(e=>setMessage(e.message))},[verifyPaystack]);if(!isAuthenticated)return <div className="card">Sign in to access wallet</div>;return <div><h1>Wallet</h1><div className="price">{money(wallet?.balanceKobo??0)}</div><input value={amount} onChange={e=>setAmount(e.target.value)}/><button onClick={fund} disabled={busy}>Pay with Paystack</button>{message&&<p>{message}</p>}<h2>Transactions</h2>{transactions.length===0?<p>No transactions</p>:null}</div>}

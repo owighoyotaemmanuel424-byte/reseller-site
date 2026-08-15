@@ -2,17 +2,32 @@ name: CI
 
 on:
   push:
-    branches: [main, multikartx-migration]
+    branches: [main, production-fix]
   pull_request:
 
 jobs:
-  build:
+  quality:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - run: npm install
-      - run: npm run build
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
       - run: npm run typecheck
+      - run: npm run build
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Secret scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          extra_args: --results=verified,unknown
+      - name: Dependency audit
+        run: npm audit --audit-level=high
