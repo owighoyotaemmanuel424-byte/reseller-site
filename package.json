@@ -14,7 +14,6 @@
     "cf:deploy": "npm run cf:build && wrangler deploy"
   },
   "dependencies": {
-    "@clerk/nextjs": "^6.25.0",
     "convex": "^1.27.0",
     "lucide-react": "^0.468.0",
     "next": "^15.5.2",
