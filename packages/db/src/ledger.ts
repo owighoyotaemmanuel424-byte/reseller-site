@@ -8,31 +8,21 @@ export async function lockWallet(tx: Prisma.TransactionClient, walletId: string)
   return wallet;
 }
 
-export async function creditWallet(userId: string, amount: Prisma.Decimal | number, reference: string, description: string, metadata?: Prisma.InputJsonValue) {
-  if (new Prisma.Decimal(amount).lte(0)) throw new Error('AMOUNT_MUST_BE_POSITIVE');
-  return prisma.$transaction(async tx => {
-    const wallet = await tx.wallet.findUnique({ where: { userId_type_currency: { userId, type: WalletType.MAIN, currency: 'NGN' } } });
-    if (!wallet) throw new Error('WALLET_NOT_FOUND');
-    const locked = await lockWallet(tx, wallet.id);
-    const next = new Prisma.Decimal(locked.balance).plus(amount);
-    const updated = await tx.wallet.update({ where: { id: wallet.id }, data: { balance: next } });
-    const entry = await tx.ledgerEntry.create({ data: { walletId: wallet.id, direction: Direction.CREDIT, amount: new Prisma.Decimal(amount), balanceAfter: next, reference, description, metadata } });
-    return { wallet: updated, entry };
-  });
-}
-
-export async function debitWallet(userId: string, amount: Prisma.Decimal | number, reference: string, description: string, metadata?: Prisma.InputJsonValue) {
-  if (new Prisma.Decimal(amount).lte(0)) throw new Error('AMOUNT_MUST_BE_POSITIVE');
+async function mutateWallet(userId: string, amount: Prisma.Decimal | number, reference: string, description: string, direction: Direction, metadata?: Prisma.InputJsonValue) {
+  const value = new Prisma.Decimal(amount);
+  if (value.lte(0)) throw new Error('AMOUNT_MUST_BE_POSITIVE');
   return prisma.$transaction(async tx => {
     const wallet = await tx.wallet.findUnique({ where: { userId_type_currency: { userId, type: WalletType.MAIN, currency: 'NGN' } } });
     if (!wallet) throw new Error('WALLET_NOT_FOUND');
     const locked = await lockWallet(tx, wallet.id);
     const current = new Prisma.Decimal(locked.balance);
-    const debit = new Prisma.Decimal(amount);
-    if (current.lt(debit)) throw new Error('INSUFFICIENT_BALANCE');
-    const next = current.minus(debit);
+    const next = direction === Direction.CREDIT ? current.plus(value) : current.minus(value);
+    if (next.lt(0)) throw new Error('INSUFFICIENT_BALANCE');
     const updated = await tx.wallet.update({ where: { id: wallet.id }, data: { balance: next } });
-    const entry = await tx.ledgerEntry.create({ data: { walletId: wallet.id, direction: Direction.DEBIT, amount: debit, balanceAfter: next, reference, description, metadata } });
+    const entry = await tx.ledgerEntry.create({ data: { walletId: wallet.id, direction, amount: value, balanceAfter: next, reference, description, metadata } });
     return { wallet: updated, entry };
   });
 }
+
+export const creditWallet = (userId: string, amount: Prisma.Decimal | number, reference: string, description: string, metadata?: Prisma.InputJsonValue) => mutateWallet(userId, amount, reference, description, Direction.CREDIT, metadata);
+export const debitWallet = (userId: string, amount: Prisma.Decimal | number, reference: string, description: string, metadata?: Prisma.InputJsonValue) => mutateWallet(userId, amount, reference, description, Direction.DEBIT, metadata);
