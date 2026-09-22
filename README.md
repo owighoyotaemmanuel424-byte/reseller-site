@@ -1,87 +1,41 @@
 # MultiKartX
 
-Digital products and reseller services platform.
+Production digital-services and VTU marketplace using **Neon PostgreSQL**, **Next.js**, **Paystack**, and **JejeLaye API v1**.
 
-## Production Environment Variables
-
-Configure these variables in your deployment platform. Never commit real secrets.
-
-### Convex
+## Environment
 
 ```env
-NEXT_PUBLIC_CONVEX_URL=
-CONVEX_DEPLOYMENT=
-```
-
-### Reseller Provider (server-side only)
-
-```env
-RESELLER_API_BASE_URL=
-RESELLER_API_KEY=
+DATABASE_URL=
+AUTH_SESSION_SECRET=
+NEXT_PUBLIC_SITE_URL=
+JEJELAYE_API_BASE_URL=https://jejelayegct.com.ng/api/v1
+JEJELAYE_API_TOKEN=
 MARKUP_PERCENT=10
-```
-
-### Paystack (server-side only)
-
-```env
 PAYSTACK_SECRET_KEY=
 ```
 
-Paystack webhook requests must be validated using the server-side secret key. Never expose `PAYSTACK_SECRET_KEY` in client-side variables.
+Run `npm run db:init` once against the production Neon database before first use.
 
-### Application URL
+JejeLaye credentials and Paystack secrets are server-only. Do not expose them as `NEXT_PUBLIC_*` variables.
 
-```env
-NEXT_PUBLIC_SITE_URL=
-```
-
-### Optional webhook configuration
-
-```env
-PAYMENT_WEBHOOK_SECRET=
-```
-
-## Development
-
-Install dependencies:
+## Commands
 
 ```bash
 npm install
-```
-
-Run locally:
-
-```bash
+npm run db:init
+npm run typecheck
+npm run build
 npm run dev
 ```
 
-Run checks:
+## Provider
 
-```bash
-npm run lint
-npm run typecheck
-npm run build
-```
+Admin users can sync the current JejeLaye service catalog from `/admin`. Customer purchases are reserved against the Neon wallet, submitted server-side to JejeLaye, and automatically refunded when the provider request fails.
 
-## Deployment
+Paystack funding is verified server-side and also supports the signed webhook endpoint:
 
-The application supports Next.js deployment and Cloudflare OpenNext deployment using the included configuration files.
+`/api/paystack/webhook`
 
-Before deployment:
+## Database
 
-1. Configure all production environment variables.
-2. Deploy Convex:
-
-```bash
-npx convex deploy
-```
-
-3. Configure the Paystack webhook endpoint.
-4. Confirm runtime logs after deployment.
-
-## Security Notes
-
-- Do not commit `.env` files.
-- Keep Paystack and reseller provider keys server-side only.
-- Wallet balance changes are processed through ledger records.
-- Webhook processing is protected against duplicate events.
+Neon PostgreSQL is now the system of record. The legacy Convex runtime has been removed from the application.
