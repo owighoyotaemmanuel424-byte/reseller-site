@@ -1,0 +1,4 @@
+import { NextResponse } from "next/server"; import { z } from "zod"; import { hashPassword,setSession,verifyPassword,clearSession } from "@/lib/auth"; import { sql } from "@/lib/db";
+const body=z.object({email:z.string().email().max(320),password:z.string().min(8).max(128)});
+export async function POST(req:Request){try{const data=body.parse(await req.json());const rows=await sql`SELECT id,password_hash FROM users WHERE email=${data.email.toLowerCase()} LIMIT 1`;if(!rows[0]||!verifyPassword(data.password,rows[0].password_hash))return NextResponse.json({error:"Invalid email or password"},{status:401});await setSession(rows[0].id);return NextResponse.json({ok:true});}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Invalid request"},{status:400})}}
+export async function DELETE(){await clearSession();return NextResponse.json({ok:true})}
