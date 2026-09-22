@@ -1,1 +1,1 @@
-export { creditWallet, debitWallet, lockWallet } from '@jejelaye/db/dist/ledger';
+export { creditWallet, debitWallet, lockWallet } from '@jejelaye/db';
