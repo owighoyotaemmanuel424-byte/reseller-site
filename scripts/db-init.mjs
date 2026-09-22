@@ -1,0 +1,1 @@
+import { neon } from "@neondatabase/serverless"; import fs from "node:fs"; const sql=neon(process.env.DATABASE_URL); const statements=fs.readFileSync("db/schema.sql","utf8").split(";").map(s=>s.trim()).filter(Boolean); for(const s of statements) await sql.query(s); console.log("Neon schema initialized");
