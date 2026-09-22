@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+model User {
+  id String @id @default(cuid())
+  email String @unique
+  phone String @unique
+  passwordHash String
+  fullName String
+  role Role @default(RESELLER)
+  status UserStatus @default(ACTIVE)
+  kycTier Int @default(1)
+  twoFactorSecret String?
+  parentId String?
+  parent User? @relation("Tree", fields:[parentId], references:[id])
+  children User[] @relation("Tree")
+  wallets Wallet[]
+  apiKeys ApiKey[]
+  pricingRules PricingRule[]
+  orders Order[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([parentId])
+  @@index([status])
+}
+
+model Wallet {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId], references:[id])
+  type WalletType @default(MAIN)
+  currency String @default("NGN")
+  balance Decimal @default(0) @db.Decimal(18,2)
+  lockedBalance Decimal @default(0) @db.Decimal(18,2)
+  entries LedgerEntry[]
+  @@unique([userId,type,currency])
+}
+
+model LedgerEntry {
+  id String @id @default(cuid())
+  walletId String
+  wallet Wallet @relation(fields:[walletId], references:[id])
+  direction Direction
+  amount Decimal @db.Decimal(18,2)
+  balanceAfter Decimal @db.Decimal(18,2)
+  reference String @unique
+  description String
+  metadata Json?
+  createdAt DateTime @default(now())
+  @@index([walletId,createdAt])
+}
+
+model Order {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId], references:[id])
+  serviceType ServiceType
+  customerRef String @unique
+  providerRef String?
+  providerSession String?
+  status OrderStatus @default(PENDING)
+  amountCost Decimal @db.Decimal(18,2)
+  amountSold Decimal @db.Decimal(18,2)
+  profit Decimal @db.Decimal(18,2)
+  requestPayload Json
+  responsePayload Json?
+  apiResponse String?
+  failureReason String?
+  idempotencyKey String? @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([userId,createdAt(sort: Desc)])
+  @@index([status,createdAt])
+  @@index([providerRef])
+}
+
+model ApiKey {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId], references:[id])
+  name String
+  keyHash String @unique
+  keyPrefix String
+  scopes String[]
+  lastUsedAt DateTime?
+  revokedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([userId])
+}
+
+model PricingRule {
+  id String @id @default(cuid())
+  userId String
+  user User @relation(fields:[userId], references:[id])
+  serviceType ServiceType
+  serviceId String?
+  markupType MarkupType
+  markupValue Decimal @db.Decimal(18,2)
+  minAmount Decimal? @db.Decimal(18,2)
+  maxAmount Decimal? @db.Decimal(18,2)
+  @@index([userId,serviceType])
+}
+
+model WebhookEvent {
+  id String @id @default(cuid())
+  source String
+  eventType String
+  payload Json
+  processedAt DateTime?
+  createdAt DateTime @default(now())
+  @@index([eventType,processedAt])
+}
+
+model AuditLog {
+  id String @id @default(cuid())
+  actorId String?
+  actorRole Role?
+  action String
+  entity String
+  entityId String
+  before Json?
+  after Json?
+  ip String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  @@index([entity,entityId])
+  @@index([actorId,createdAt])
+}
+
+model ProviderLog {
+  id String @id @default(cuid())
+  method String
+  url String
+  requestBody Json?
+  responseBody Json?
+  statusCode Int
+  durationMs Int
+  error String?
+  createdAt DateTime @default(now())
+  @@index([createdAt])
+}
+
+enum Role { SUPER_ADMIN ADMIN RESELLER SUB_RESELLER }
+enum UserStatus { ACTIVE SUSPENDED PENDING_KYC }
+enum WalletType { MAIN COMMISSION GIFT_CARD REFERRAL }
+enum Direction { DEBIT CREDIT }
+enum ServiceType { AIRTIME DATA ELECTRICITY TV EDUCATION PRINT_CARD BULK_SMS SOCIAL_BOOST BUY_LOGS ECOMMERCE MARKETPLACE GIFT_CARD VIRTUAL_NUMBER EMAIL ESIM }
+enum OrderStatus { PENDING PROCESSING PENDING_PROCESSING SUCCESSFUL FAILED AWAITING_FULFILLMENT CANCELLED REFUNDED }
+enum MarkupType { PERCENT FIXED }
