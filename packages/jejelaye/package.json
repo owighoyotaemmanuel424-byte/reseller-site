@@ -1,0 +1,1 @@
+{"name":"@jejelaye/provider","private":true,"version":"1.0.0","main":"dist/client.js","types":"dist/client.d.ts","scripts":{"build":"tsc -p tsconfig.json","typecheck":"tsc -p tsconfig.json --noEmit"},"dependencies":{"axios":"^1.7.9","axios-retry":"^4.5.0","opossum":"^8.4.0"},"devDependencies":{"@types/node":"^22.10.0","typescript":"^5.7.2"}}
