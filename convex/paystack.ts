@@ -1,7 +1,7 @@
 import { action, internalMutation, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { internal } from "./_generated/api";
-import { createHmac, randomUUID } from "crypto";
+
 
 const PAYSTACK_API = "https://api.paystack.co";
 
@@ -13,17 +13,21 @@ function secretKey() {
   return key;
 }
 
-export function verifyPaystackSignature(
-  payload: string,
-  signature: string | null
-) {
+export async function verifyPaystackSignature(payload: string, signature: string | null) {
   if (!signature) return false;
-
-  const expected = createHmac("sha512", secretKey())
-    .update(payload)
-    .digest("hex");
-
-  return expected === signature;
+  const key = await crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(secretKey()),
+    { name: "HMAC", hash: "SHA-512" },
+    false,
+    ["sign"]
+  );
+  const digest = await crypto.subtle.sign("HMAC", key, new TextEncoder().encode(payload));
+  const expected = Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
+  if (expected.length !== signature.length) return false;
+  let diff = 0;
+  for (let i = 0; i < expected.length; i++) diff |= expected.charCodeAt(i) ^ signature.charCodeAt(i);
+  return diff === 0;
 }
 
 function siteUrl() {
@@ -42,7 +46,7 @@ export const createFundingRequest = mutation({
       throw new Error("Authentication required");
     }
 
-    const reference = `MKX-${randomUUID()}`;
+    const reference = `MKX-${crypto.randomUUID()}`;
     const now = Date.now();
 
     await ctx.db.insert("fundingRequests", {
@@ -145,7 +149,7 @@ export const createFundingRequestForUser = internalMutation({
   },
 
   handler: async (ctx, args) => {
-    const reference = `MKX-${randomUUID()}`;
+    const reference = `MKX-${crypto.randomUUID()}`;
     const now = Date.now();
 
     await ctx.db.insert("fundingRequests", {
@@ -327,5 +331,42 @@ export const markFailed = internalMutation({
     await ctx.db.patch(request._id, {
       status: "failed",
     });
+  },
+});
+export const verify = action({
+  args: { reference: v.string() },
+  handler: async (ctx, args) => {
+    const identity = await ctx.auth.getUserIdentity();
+    if (!identity) throw new Error("Authentication required");
+
+    const response = await fetch(PAYSTACK_API + "/transaction/verify/" + encodeURIComponent(args.reference), {
+      headers: { Authorization: "Bearer " + secretKey(), Accept: "application/json" },
+      signal: AbortSignal.timeout(15000),
+    });
+    const payload = await response.json() as {
+      status?: boolean;
+      message?: string;
+      data?: { id?: number; status?: string; amount?: number; currency?: string; reference?: string };
+    };
+
+    if (!response.ok || !payload.status || !payload.data) {
+      throw new Error(payload.message || "Paystack verification failed");
+    }
+
+    if (String(payload.data.status).toLowerCase() !== "success") {
+      await ctx.runMutation(internal.paystack.markFailed, { reference: args.reference });
+      throw new Error("Payment has not been confirmed by Paystack");
+    }
+
+    await ctx.runMutation(internal.paystack.applyWebhookPayment, {
+      eventId: "manual-verify-" + String(payload.data.id ?? args.reference),
+      eventType: "charge.success",
+      reference: args.reference,
+      amountKobo: Number(payload.data.amount ?? 0),
+      currency: String(payload.data.currency ?? "NGN"),
+      successful: true,
+    });
+
+    return { success: true, reference: args.reference };
   },
 });
