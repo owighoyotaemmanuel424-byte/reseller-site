@@ -129,7 +129,23 @@ export const reserveWallet = internalMutation({
     const wallet = await ctx.db.query("wallets").withIndex("by_user", (q) => q.eq("userId", args.userId)).unique();
     if (!wallet) throw new Error("Wallet is not initialized");
 
-    const totalKobo = product.priceKobo * args.qty;
+    let totalKobo = product.priceKobo * args.qty;
+    if (args.purchaseDataJson) {
+      try {
+        const data = JSON.parse(args.purchaseDataJson) as { amount?: unknown; quantity?: unknown };
+        if (product.serviceType === "airtime" || product.serviceType === "electricity") {
+          const amount = Number(data.amount);
+          if (!Number.isFinite(amount) || amount <= 0) throw new Error("A valid amount is required");
+          totalKobo = Math.round(amount * 100 * (1 + markupPercent() / 100));
+        } else if (product.serviceType === "social_boost" || product.serviceType === "print_card") {
+          const quantity = Number(data.quantity ?? args.qty);
+          if (!Number.isSafeInteger(quantity) || quantity < 1) throw new Error("Invalid quantity");
+          totalKobo = product.priceKobo * quantity;
+        }
+      } catch (error) {
+        throw error instanceof Error ? error : new Error("Invalid purchase details");
+      }
+    }
     if (!Number.isSafeInteger(totalKobo) || totalKobo <= 0) throw new Error("Invalid order amount");
     if (wallet.balanceKobo < totalKobo) throw new Error("Insufficient wallet balance");
 
