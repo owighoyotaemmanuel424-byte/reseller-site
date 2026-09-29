@@ -14,7 +14,7 @@ jobs:
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
+      - run: npm install --no-audit --no-fund
       - run: npm run lint
       - run: npm run typecheck
       - run: npm run build
@@ -30,4 +30,4 @@ jobs:
         with:
           extra_args: --results=verified,unknown
       - name: Dependency audit
-        run: npm audit --audit-level=high
+        run: npm install --package-lock-only --ignore-scripts --no-audit --no-fund && npm audit --audit-level=high
