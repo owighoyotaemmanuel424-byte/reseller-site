@@ -32,5 +32,14 @@
     "turbo": "2.10.1",
     "typescript": "^5.7.2",
     "wrangler": "^4.32.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@prisma/client",
+      "@prisma/engines",
+      "bcrypt",
+      "esbuild",
+      "prisma"
+    ]
   }
 }

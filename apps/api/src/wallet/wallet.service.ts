@@ -1,6 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { prisma, creditWallet, debitWallet } from '@jejelaye/db';
+import { Prisma, prisma, creditWallet, debitWallet } from '@jejelaye/db';
 
 @Injectable()
 export class WalletService {

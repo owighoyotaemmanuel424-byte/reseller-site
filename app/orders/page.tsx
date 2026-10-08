@@ -32,7 +32,14 @@ export default function Orders() {
   }, []);
 
   useEffect(() => {
-    void load();
+    let active = true;
+    void (async () => {
+      await load();
+      if (!active) return;
+    })();
+    return () => {
+      active = false;
+    };
   }, [load]);
 
   useEffect(() => {

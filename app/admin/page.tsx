@@ -24,7 +24,11 @@ export default function Admin() {
     } catch (error) { setMessage(error instanceof Error ? error.message : "Unable to load admin data"); }
     finally { setLoading(false); }
   }
-  useEffect(() => { load(tab); }, [tab]);
+  useEffect(() => {
+    void (async () => {
+      await load(tab);
+    })();
+  }, [tab]);
 
   async function sync() {
     setMessage("Syncing JejeLaye services…");

@@ -7,6 +7,10 @@ out/
 .open-next/
 .wrangler/
 
+# Turbo / workspace build output
+.turbo/
+dist/
+
 # Convex local state
 .convex/
 

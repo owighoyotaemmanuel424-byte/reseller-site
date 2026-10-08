@@ -1,15 +1,17 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "installCommand": "pnpm install --no-frozen-lockfile",
-  "buildCommand": "pnpm turbo run build",
   "services": {
     "app": {
       "root": ".",
-      "framework": "nextjs"
+      "framework": "nextjs",
+      "installCommand": "pnpm install --no-frozen-lockfile",
+      "buildCommand": "pnpm build"
     },
     "api": {
       "root": "apps/api",
-      "framework": "nestjs"
+      "framework": "nestjs",
+      "installCommand": "pnpm install --no-frozen-lockfile",
+      "buildCommand": "pnpm turbo run build --filter=@jejelaye/api"
     }
   },
   "rewrites": [
