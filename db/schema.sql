@@ -16,3 +16,13 @@ CREATE TABLE IF NOT EXISTS admin_settings(key text PRIMARY KEY,value text NOT NU
 INSERT INTO admin_settings(key,value) VALUES
 ('platformName','MultiKartX'),('markupPercent','0'),('lowFloatThreshold','50000'),('criticalFloatThreshold','10000'),('alertEmail',''),('alertPhone',''),('maintenanceMode','false')
 ON CONFLICT(key) DO NOTHING;
+
+
+CREATE TABLE IF NOT EXISTS admin_permissions(
+  admin_user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  permission text NOT NULL,
+  granted boolean NOT NULL DEFAULT true,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  PRIMARY KEY(admin_user_id,permission)
+);
+CREATE INDEX IF NOT EXISTS admin_permissions_permission_idx ON admin_permissions(permission,granted);
