@@ -11,7 +11,7 @@
       "root": "apps/api",
       "framework": "nestjs",
       "installCommand": "pnpm install --no-frozen-lockfile",
-      "buildCommand": "pnpm exec nest build"
+      "buildCommand": "pnpm --filter @jejelaye/db build && pnpm exec nest build"
     }
   },
   "rewrites": [
