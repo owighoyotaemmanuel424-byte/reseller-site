@@ -153,3 +153,14 @@ CREATE INDEX IF NOT EXISTS refresh_tokens_user_idx ON refresh_tokens(user_id,exp
 
 CREATE TABLE IF NOT EXISTS provider_configs(provider text PRIMARY KEY,enabled boolean NOT NULL DEFAULT false,base_url text NOT NULL DEFAULT '',public_key text NOT NULL DEFAULT '',secret_json text NOT NULL DEFAULT '',extra_json jsonb NOT NULL DEFAULT '{}'::jsonb,updated_by uuid REFERENCES users(id),updated_at timestamptz NOT NULL DEFAULT now());
 CREATE INDEX IF NOT EXISTS provider_configs_updated_idx ON provider_configs(updated_at DESC);
+
+
+-- Production hardening
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS idempotency_key text;
+CREATE UNIQUE INDEX IF NOT EXISTS orders_idempotency_key_idx ON orders(idempotency_key) WHERE idempotency_key IS NOT NULL;
+CREATE INDEX IF NOT EXISTS products_service_active_idx ON products(service_type,active,category,name);
+CREATE INDEX IF NOT EXISTS wallet_transactions_reference_idx ON wallet_transactions(reference);
+CREATE INDEX IF NOT EXISTS wallet_ledger_user_created_idx ON wallet_ledger(user_id,created_at DESC);
+CREATE INDEX IF NOT EXISTS funding_requests_status_idx ON funding_requests(status,created_at DESC);
+CREATE INDEX IF NOT EXISTS orders_provider_ref_idx ON orders(provider,provider_order_id);
+CREATE INDEX IF NOT EXISTS notifications_unread_idx ON notifications(user_id,is_read,created_at DESC);
