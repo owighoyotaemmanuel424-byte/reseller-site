@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="tv" title="TV Subscriptions" description="Pay supported TV subscriptions using live provider packages."/>}
