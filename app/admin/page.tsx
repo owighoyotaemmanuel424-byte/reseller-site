@@ -29,13 +29,13 @@ export default function Admin(){
  const [drawer,setDrawer]=useState<any>(null);
  const [busy,setBusy]=useState(false);
 
- async function request(url:string,init?:RequestInit){
+ const request=useCallback(async (url:string,init?:RequestInit)=>{
    const r=await fetch(url,{...init,cache:"no-store",credentials:"include"});
    const b=await r.json().catch(()=>({}));
    if(r.status===401||r.status===403){router.replace("/admin-login");throw new Error("Admin access required")}
    if(!r.ok) throw new Error(b.error||"Request failed");
    return b;
- }
+ },[router]);
  const load=useCallback(async (s:Section=section)=>{
    setLoading(true);setMessage("");
    try{
