@@ -2,7 +2,22 @@
   "$schema": "https://turbo.build/schema.json",
   "globalEnv": [
     "DATABASE_URL",
-    "DIRECT_URL"
+    "DIRECT_URL",
+    "AUTH_SESSION_SECRET",
+    "ADMIN_SESSION_SECRET",
+    "ADMIN_BOOTSTRAP_SECRET",
+    "JWT_SECRET",
+    "JWT_REFRESH_SECRET",
+    "ENCRYPTION_KEY",
+    "WEBHOOK_SIGNING_SECRET",
+    "JEJELAYE_BASE_URL",
+    "JEJELAYE_TOKEN",
+    "PAYSTACK_SECRET_KEY",
+    "FLUTTERWAVE_SECRET_KEY",
+    "MONNIFY_API_KEY",
+    "MONNIFY_SECRET_KEY",
+    "RESEND_API_KEY",
+    "TERMII_API_KEY"
   ],
   "tasks": {
     "build": {
