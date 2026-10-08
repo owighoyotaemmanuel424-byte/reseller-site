@@ -32,6 +32,13 @@ model User {
   withdrawals     WithdrawalRequest[] @relation("WithdrawalUser")
   processedWithdrawals WithdrawalRequest[] @relation("WithdrawalProcessor")
   refreshTokens    RefreshToken[]
+  walletTransactions WalletTransaction[]
+  fundingRequests FundingRequest[]
+  passwordResetTokens PasswordResetToken[]
+  adminAuditLogs AdminAuditLog[]
+  adminPermissions AdminPermission[]
+  supportTickets SupportTicket[]
+  notifications Notification[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
 
@@ -336,7 +343,6 @@ model Product {
   createdAt      DateTime   @default(now())
   updatedAt      DateTime   @updatedAt
 
-  orders         Order[]
 
   @@index([serviceType])
   @@index([category])
