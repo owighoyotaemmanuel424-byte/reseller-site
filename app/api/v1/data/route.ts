@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
 import { getApiUser } from "@/lib/api-token";
+import { getProviderRuntimeConfig } from "@/lib/provider-config";
 
 const body = z.object({
   network: z.coerce.number().int().positive(),
@@ -32,9 +33,10 @@ export async function POST(request: Request) {
     await sql`INSERT INTO wallet_transactions(user_id,type,amount_kobo,description,reference,status) VALUES(${user.id},'debit',${total},${"API purchase: "+product.name},${"ORDER-"+order.id},'confirmed')`;
 
     try {
-      const base = (process.env.JEJELAYE_API_BASE_URL || "https://jejelayegct.com.ng/api/v1").replace(/\/$/, "");
-      const token = process.env.JEJELAYE_API_TOKEN;
-      if (!token) throw new Error("Provider API is not configured");
+      const config = await getProviderRuntimeConfig("jejelaye");
+      const base = (config.baseUrl || "https://jejelayegct.com.ng/api/v1").replace(/\/$/, "");
+      const token = String(config.secrets.apiToken || "");
+      if (!token) throw new Error("JejeLaye API key is not configured in Admin → Provider Configuration");
       const response = await fetch(`${base}/services/${encodeURIComponent(String(product.provider_product_id))}/purchase`, {
         method: "POST",
         headers: { Authorization: `Bearer ${token}`, Accept: "application/json", "Content-Type": "application/json" },

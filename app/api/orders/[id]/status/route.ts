@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
-
-const token = () => process.env.JEJELAYE_API_TOKEN || "";
-const base = () =>
-  (process.env.JEJELAYE_API_BASE_URL || "https://jejelayegct.com.ng/api/v1").replace(/\/$/, "");
+import { getProviderRuntimeConfig } from "@/lib/provider-config";
 
 async function provider(path: string) {
-  if (!token()) throw new Error("JEJELAYE_API_TOKEN is not configured");
-  const response = await fetch(base() + path, {
+  const config = await getProviderRuntimeConfig("jejelaye");
+  const token = String(config.secrets.apiToken || "");
+  const base = (config.baseUrl || "https://jejelayegct.com.ng/api/v1").replace(/\/$/, "");
+  if (!token) throw new Error("JejeLaye API key is not configured in Admin → Provider Configuration");
+  const response = await fetch(base + path, {
     headers: {
-      Authorization: `Bearer ${token()}`,
+      Authorization: `Bearer ${token}`,
       Accept: "application/json",
       "Content-Type": "application/json",
     },

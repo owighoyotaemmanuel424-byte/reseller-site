@@ -150,3 +150,6 @@ CREATE TABLE IF NOT EXISTS refresh_tokens(
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS refresh_tokens_user_idx ON refresh_tokens(user_id,expires_at);
+
+CREATE TABLE IF NOT EXISTS provider_configs(provider text PRIMARY KEY,enabled boolean NOT NULL DEFAULT false,base_url text NOT NULL DEFAULT '',public_key text NOT NULL DEFAULT '',secret_json text NOT NULL DEFAULT '',extra_json jsonb NOT NULL DEFAULT '{}'::jsonb,updated_by uuid REFERENCES users(id),updated_at timestamptz NOT NULL DEFAULT now());
+CREATE INDEX IF NOT EXISTS provider_configs_updated_idx ON provider_configs(updated_at DESC);

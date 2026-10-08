@@ -1,18 +1,20 @@
 import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
+import { getProviderRuntimeConfig } from "@/lib/provider-config";
 
 const BASE_URL = "https://jejelayegct.com.ng/api/v1";
 
 async function sync() {
-  const token = process.env.JEJELAYE_API_TOKEN?.trim();
+  const config = await getProviderRuntimeConfig("jejelaye");
+  const token = String(config.secrets.apiToken || "").trim();
   if (!token) {
-    const error = new Error("JEJELAYE_API_TOKEN is not configured in this Production deployment");
+    const error = new Error("JejeLaye API key is not configured in Admin → Provider Configuration");
     (error as Error & { code?: string }).code = "JEJELAYE_TOKEN_MISSING";
     throw error;
   }
 
-  const base = (process.env.JEJELAYE_API_BASE_URL || BASE_URL).replace(/\/$/, "");
+  const base = (config.baseUrl || BASE_URL).replace(/\/$/, "");
   let response: Response;
 
   try {
@@ -124,6 +126,12 @@ async function sync() {
     WHERE provider='jejelaye'
       AND updated_at < now()-interval '5 minutes'`;
 
+  await sql`INSERT INTO admin_settings(key,value,updated_at) VALUES
+    ('catalogLastSyncAt',${new Date().toISOString()},now()),
+    ('catalogLastSyncCount',${String(count)},now()),
+    ('catalogLastSyncStatus','success',now()),
+    ('catalogLastSyncError','',now())
+    ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()`;
   return count;
 }
 
