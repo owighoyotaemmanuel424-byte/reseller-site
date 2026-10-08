@@ -5,13 +5,13 @@
       "root": ".",
       "framework": "nextjs",
       "installCommand": "pnpm install --no-frozen-lockfile",
-      "buildCommand": "pnpm build"
+      "buildCommand": "pnpm db:init && pnpm build"
     },
     "api": {
       "root": "apps/api",
       "framework": "nestjs",
       "installCommand": "pnpm install --no-frozen-lockfile",
-      "buildCommand": "pnpm turbo run build --filter=@jejelaye/api"
+      "buildCommand": "pnpm db:init && pnpm turbo run build --filter=@jejelaye/api"
     }
   },
   "rewrites": [
