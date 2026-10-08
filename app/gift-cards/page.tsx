@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="gift_card" title="Gift Cards" description="Only provider-backed gift-card products are shown. No fake inventory is created."/>}
