@@ -169,6 +169,226 @@ model ProviderLog {
   @@index([createdAt])
 }
 
+model WalletTransaction {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type          String
+  amountKobo    BigInt
+  description   String
+  reference     String    @unique
+  status        String    @default("pending")
+  createdAt     DateTime  @default(now())
+  walletId      String?
+  eventId       String?
+
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model FundingRequest {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountKobo    BigInt
+  reference     String    @unique
+  status        String    @default("pending")
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([reference])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@unique([userId, tokenHash])
+  @@index([tokenHash])
+}
+
+model AdminAuditLog {
+  id         String    @id @default(cuid())
+  adminUserId String
+  admin      User      @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  action     String
+  targetType String?
+  targetId   String?
+  details    Json?
+  ipAddress  String?
+  createdAt  DateTime  @default(now())
+
+  @@index([adminUserId, createdAt(sort: Desc)])
+  @@index([targetType, targetId])
+  @@index([createdAt(sort: Desc)])
+}
+
+model AdminPermission {
+  id           String    @id @default(cuid())
+  adminUserId  String
+  admin        User      @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+  permission   String
+  granted      Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@unique([adminUserId, permission])
+  @@index([adminUserId])
+}
+
+model SupportTicket {
+  id          String    @id @default(cuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     String
+  category    String
+  priority    String    @default("medium")
+  status      String    @default("open")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}
+
+model SupportMessage {
+  id        String    @id @default(cuid())
+  ticketId  String
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  adminId   String?
+  admin     User?     @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  message   String
+  createdAt DateTime  @default(now())
+
+  @@index([ticketId, createdAt(sort: Asc)])
+}
+
+model Notification {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type      String
+  title     String
+  message   String
+  isRead    Boolean   @default(false)
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model Announcement {
+  id        String    @id @default(cuid())
+  title     String
+  content   String
+  active    Boolean   @default(true)
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([active, createdAt(sort: Desc)])
+}
+
+model Promotion {
+  id        String    @id @default(cuid())
+  title     String
+  content   String
+  type      String    @default("announcement")
+  active    Boolean   @default(true)
+  metadata  Json?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@index([type, active])
+}
+
+model Product {
+  id             String     @id @default(cuid())
+  provider       String
+  providerProductId String   @unique
+  name           String
+  description    String?
+  serviceType    ServiceType
+  category       String?
+  priceKobo      BigInt     @default(0)
+  minAmountKobo  BigInt?
+  maxAmountKobo  BigInt?
+  markupPercent  Decimal?   @db.Decimal(6, 2)
+  active         Boolean    @default(true)
+  metadata       Json?
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+
+  orders         Order[]
+
+  @@index([serviceType])
+  @@index([category])
+  @@index([active])
+  @@index([provider])
+}
+
+model ProductSyncLog {
+  id         String   @id @default(cuid())
+  provider   String
+  synced     Int
+  updated    Int
+  deactivated Int
+  errors     Json?
+  createdAt  DateTime @default(now())
+
+  @@index([createdAt(sort: Desc)])
+}
+
+model RefundRecord {
+  id          String    @id @default(cuid())
+  orderId     String    @unique
+  order       Order     @relation(fields: [orderId], references: [id])
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  amountKobo  BigInt
+  reason      String
+  reference   String    @unique
+  status      String    @default("pending")
+  createdBy   String?
+  createdById String?
+  creator    User?     @relation(fields: [createdById], references: [id])
+  createdAt   DateTime  @default(now())
+  processedAt DateTime?
+
+  @@index([orderId])
+  @@index([userId])
+  @@index([status])
+}
+
+model WithdrawalRequest {
+  id            String    @id @default(cuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amountKobo    BigInt
+  destination   String
+  reference     String    @unique
+  status        String    @default("pending")
+  note         String?
+  processedBy   String?
+  processedById String?
+  processor     User?     @relation(fields: [processedById], references: [id])
+  createdAt     DateTime  @default(now())
+  processedAt   DateTime?
+
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt(sort: Desc)])
+}
+
 enum Role {
   SUPER_ADMIN
   ADMIN

@@ -53,3 +53,100 @@ CREATE TABLE IF NOT EXISTS withdrawal_requests(
   created_at timestamptz NOT NULL DEFAULT now()
 );
 CREATE INDEX IF NOT EXISTS withdrawal_requests_status_idx ON withdrawal_requests(status,created_at DESC);
+
+-- User profile enrichment (also applied by db/migrations/002_vtu_reseller.sql)
+ALTER TABLE users ADD COLUMN IF NOT EXISTS full_name text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS phone text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS api_token_hash text UNIQUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_code text UNIQUE;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referred_by uuid REFERENCES users(id);
+ALTER TABLE users ADD COLUMN IF NOT EXISTS referral_bonus_paid boolean NOT NULL DEFAULT false;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS status text NOT NULL DEFAULT 'active';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS kyc_tier integer NOT NULL DEFAULT 1;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS two_factor_secret text;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+CREATE INDEX IF NOT EXISTS users_api_token_hash_idx ON users(api_token_hash);
+CREATE INDEX IF NOT EXISTS users_referred_by_idx ON users(referred_by);
+
+-- Product catalog enrichment
+ALTER TABLE products ADD COLUMN IF NOT EXISTS markup_percent numeric(6,2);
+ALTER TABLE products ADD COLUMN IF NOT EXISTS created_at timestamptz NOT NULL DEFAULT now();
+
+-- Order cost/profit and provider tracking
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS amount_cost bigint NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS amount_sold bigint NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS profit bigint NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS provider_ref text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS provider_session text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS request_payload jsonb;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS response_payload jsonb;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS api_response text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS failure_reason text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS customer_ref text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+CREATE TABLE IF NOT EXISTS product_sync_logs(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  provider text NOT NULL,
+  synced integer NOT NULL DEFAULT 0,
+  updated integer NOT NULL DEFAULT 0,
+  deactivated integer NOT NULL DEFAULT 0,
+  errors jsonb,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS product_sync_logs_created_idx ON product_sync_logs(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS notifications(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  type text NOT NULL DEFAULT 'info',
+  title text NOT NULL,
+  message text NOT NULL,
+  is_read boolean NOT NULL DEFAULT false,
+  metadata jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS notifications_user_idx ON notifications(user_id,created_at DESC);
+
+CREATE TABLE IF NOT EXISTS support_tickets(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  subject text NOT NULL,
+  category text NOT NULL DEFAULT 'general',
+  priority text NOT NULL DEFAULT 'medium',
+  status text NOT NULL DEFAULT 'open',
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS support_tickets_status_idx ON support_tickets(status,created_at DESC);
+
+CREATE TABLE IF NOT EXISTS support_messages(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  ticket_id uuid NOT NULL REFERENCES support_tickets(id) ON DELETE CASCADE,
+  user_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  admin_id uuid REFERENCES users(id) ON DELETE SET NULL,
+  message text NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS support_messages_ticket_idx ON support_messages(ticket_id,created_at ASC);
+
+CREATE TABLE IF NOT EXISTS password_reset_tokens(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash text NOT NULL,
+  expires_at timestamptz NOT NULL,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE(user_id, token_hash)
+);
+CREATE INDEX IF NOT EXISTS password_reset_tokens_hash_idx ON password_reset_tokens(token_hash);
+
+CREATE TABLE IF NOT EXISTS refresh_tokens(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash text NOT NULL,
+  expires_at timestamptz NOT NULL,
+  revoked_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS refresh_tokens_user_idx ON refresh_tokens(user_id,expires_at);
