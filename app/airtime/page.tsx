@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="airtime" title="Airtime" description="Buy real-time airtime from the live provider catalog."/>}
