@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="data" title="Data" description="Choose an actual provider data plan with live pricing and validity."/>}
