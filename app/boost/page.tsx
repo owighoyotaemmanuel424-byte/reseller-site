@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="social_boost" title="Social Boost" description="Order real provider-backed social services with quantity and target controls."/>}
