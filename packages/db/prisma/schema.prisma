@@ -25,6 +25,12 @@ model User {
   apiKeys          ApiKey[]
   pricingRules     PricingRule[]
   orders           Order[]
+  supportMessages  SupportMessage[] @relation("SupportMessageUser")
+  adminMessages    SupportMessage[] @relation("SupportMessageAdmin")
+  refunds          RefundRecord[] @relation("RefundUser")
+  createdRefunds   RefundRecord[] @relation("RefundCreator")
+  withdrawals     WithdrawalRequest[] @relation("WithdrawalUser")
+  processedWithdrawals WithdrawalRequest[] @relation("WithdrawalProcessor")
   refreshTokens    RefreshToken[]
   createdAt        DateTime       @default(now())
   updatedAt        DateTime       @updatedAt
@@ -261,9 +267,9 @@ model SupportMessage {
   ticketId  String
   ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
   userId    String?
-  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  user      User?     @relation("SupportMessageUser", fields: [userId], references: [id], onDelete: SetNull)
   adminId   String?
-  admin     User?     @relation(fields: [adminId], references: [id], onDelete: SetNull)
+  admin     User?     @relation("SupportMessageAdmin", fields: [adminId], references: [id], onDelete: SetNull)
   message   String
   createdAt DateTime  @default(now())
 
@@ -360,7 +366,7 @@ model RefundRecord {
   status      String    @default("pending")
   createdBy   String?
   createdById String?
-  creator    User?     @relation(fields: [createdById], references: [id])
+  creator    User?     @relation("RefundCreator", fields: [createdById], references: [id])
   createdAt   DateTime  @default(now())
   processedAt DateTime?
 
@@ -372,7 +378,7 @@ model RefundRecord {
 model WithdrawalRequest {
   id            String    @id @default(cuid())
   userId        String
-  user          User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user          User      @relation("WithdrawalUser", fields: [userId], references: [id], onDelete: Cascade)
   amountKobo    BigInt
   destination   String
   reference     String    @unique
@@ -380,7 +386,7 @@ model WithdrawalRequest {
   note         String?
   processedBy   String?
   processedById String?
-  processor     User?     @relation(fields: [processedById], references: [id])
+  processor     User?     @relation("WithdrawalProcessor", fields: [processedById], references: [id])
   createdAt     DateTime  @default(now())
   processedAt   DateTime?
 
