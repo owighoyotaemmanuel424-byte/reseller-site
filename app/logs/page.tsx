@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="buy_logs" title="Buy Logs" description="Browse the real provider catalog and purchase the exact provider-named products."/>}
