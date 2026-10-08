@@ -1,0 +1,2 @@
+import {NextResponse} from "next/server";import {requireAdmin} from "@/lib/admin";import {sql} from "@/lib/db";
+export async function GET(){const u=await requireAdmin();if(!u)return NextResponse.json({error:"Admin access required"},{status:403});const health:any={database:"ok",timestamp:new Date().toISOString()};try{await sql`SELECT 1`;health.database="ok"}catch{health.database="error"}health.environment=process.env.NODE_ENV||"unknown";health.providerConfigured=Boolean(process.env.JEJELAYE_API_TOKEN);return NextResponse.json({health});}
