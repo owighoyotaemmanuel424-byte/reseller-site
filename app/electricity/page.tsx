@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="electricity" title="Electricity" description="Verify and pay supported electricity services using live provider products."/>}
