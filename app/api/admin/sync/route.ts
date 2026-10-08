@@ -124,6 +124,12 @@ async function sync() {
     WHERE provider='jejelaye'
       AND updated_at < now()-interval '5 minutes'`;
 
+  await sql`INSERT INTO admin_settings(key,value,updated_at) VALUES
+    ('catalogLastSyncAt',${new Date().toISOString()},now()),
+    ('catalogLastSyncCount',${String(count)},now()),
+    ('catalogLastSyncStatus','success',now()),
+    ('catalogLastSyncError','',now())
+    ON CONFLICT(key) DO UPDATE SET value=EXCLUDED.value,updated_at=now()`;
   return count;
 }
 
