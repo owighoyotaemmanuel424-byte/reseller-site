@@ -105,6 +105,13 @@ export default function Admin(){
     </>}
    </div>
   </main>
+  <nav className="mobile-admin-nav" aria-label="Admin quick navigation">
+   <button className={section==="overview"?"active":""} onClick={()=>setSection("overview")}><LayoutDashboard size={18}/><span>Home</span></button>
+   <button className={section==="orders"?"active":""} onClick={()=>setSection("orders")}><ClipboardList size={18}/><span>Orders</span></button>
+   <button className={section==="wallets"?"active":""} onClick={()=>setSection("wallets")}><WalletCards size={18}/><span>Wallet</span></button>
+   <button className={section==="catalog"?"active":""} onClick={()=>setSection("catalog")}><Boxes size={18}/><span>Catalog</span></button>
+   <button onClick={()=>setMobile(true)}><Menu size={18}/><span>More</span></button>
+  </nav>
   {drawer&&<div className="modal-backdrop"><div className="admin-modal"><div className="modal-head"><div><span className="eyebrow">WALLET CONTROL</span><h2>Adjust balance</h2></div><button className="icon-btn" onClick={()=>setDrawer(null)}><X/></button></div><label>Operation<select value={drawer.type} onChange={e=>setDrawer({...drawer,type:e.target.value})}><option value="credit">Credit</option><option value="debit">Debit</option></select></label><label>Amount (₦)<input inputMode="decimal" value={drawer.amount} onChange={e=>setDrawer({...drawer,amount:e.target.value})}/></label><label>Reason<textarea value={drawer.reason} onChange={e=>setDrawer({...drawer,reason:e.target.value})}/></label><button className="btn wide" disabled={busy} onClick={adjustWallet}>Apply adjustment</button></div></div>}
  </div>
 }
