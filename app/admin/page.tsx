@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Activity, BarChart3, Boxes, ChevronDown, CircleDollarSign, ClipboardList, Database,
@@ -36,15 +36,15 @@ export default function Admin(){
    if(!r.ok) throw new Error(b.error||"Request failed");
    return b;
  }
- async function load(s:Section=section){
+ const load=useCallback(async (s:Section=section)=>{
    setLoading(true);setMessage("");
    try{
     const urls:any={overview:"/api/admin/stats",analytics:"/api/admin/orders",orders:"/api/admin/orders",users:"/api/admin/users",wallets:"/api/admin/wallets",catalog:"/api/admin/catalog",payments:"/api/admin/payments",provider:"/api/admin/catalog",audit:"/api/admin/audit",settings:"/api/admin/settings",security:"/api/admin/security",system:"/api/admin/health",security:"/api/admin/security",access:"/api/admin/permissions",reconciliation:"/api/admin/reconciliation"};
     setData(await request(urls[s]));
    }catch(e){setMessage(e instanceof Error?e.message:"Unable to load admin data")}
    finally{setLoading(false)}
- }
- useEffect(()=>{void load(section)},[section]);
+ },[request,section]);
+ useEffect(()=>{void load(section)},[section,load]);
 
  async function action(fn:()=>Promise<any>,success:string){
    setBusy(true);setMessage("");
@@ -63,7 +63,7 @@ export default function Admin(){
  async function saveSettings(){
    await action(()=>request("/api/admin/settings",{method:"PATCH",headers:{"Content-Type":"application/json"},body:JSON.stringify(data.settings||{})}),"Settings saved.");
  }
- const rows=Array.isArray(data)?data:[];
+ const rows=useMemo(()=>Array.isArray(data)?data:[],[data]);
  const filtered=useMemo(()=>rows.filter((r:any)=>JSON.stringify(r).toLowerCase().includes(query.toLowerCase())),[rows,query]);
  const stats=section==="overview"?data:{};
  const funding=data.funding||[], tx=data.transactions||[], webhooks=data.webhooks||[];
