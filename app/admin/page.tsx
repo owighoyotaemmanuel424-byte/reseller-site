@@ -8,14 +8,14 @@ import {
   ShieldCheck, SlidersHorizontal, UserCog, Users, WalletCards, X, Zap
 } from "lucide-react";
 
-type Section = "overview"|"analytics"|"orders"|"users"|"wallets"|"catalog"|"payments"|"provider"|"audit"|"settings"|"security"|"system"|"access";
+type Section = "overview"|"analytics"|"orders"|"users"|"wallets"|"catalog"|"payments"|"provider"|"audit"|"settings"|"security"|"system"|"access"|"reconciliation";
 const money=(n:unknown)=>"₦"+(Number(n||0)/100).toLocaleString("en-NG",{minimumFractionDigits:2});
 const date=(v:unknown)=>v?new Date(String(v)).toLocaleString():"—";
 
 const nav:[Section,string,string][]=[
  ["overview","Overview","Command center"],["analytics","Analytics","Revenue & activity"],["orders","Orders","Fulfillment queue"],
  ["users","Users","Customers & access"],["wallets","Wallets","Balances & adjustments"],["catalog","Catalog","Products & markup"],
- ["payments","Payments","Funding & ledger"],["provider","Provider","JejeLaye health"],["audit","Audit log","Admin activity"],["settings","Settings","Platform controls"],["security","Security","Access & protection"],["system","System health","Runtime diagnostics"],["access","Admin access","Roles & permissions"]
+ ["payments","Payments","Funding & ledger"],["reconciliation","Reconciliation","Money & settlement"],["provider","Provider","JejeLaye health"],["audit","Audit log","Admin activity"],["settings","Settings","Platform controls"],["security","Security","Access & protection"],["system","System health","Runtime diagnostics"],["access","Admin access","Roles & permissions"]
 ];
 
 export default function Admin(){
@@ -39,7 +39,7 @@ export default function Admin(){
  async function load(s:Section=section){
    setLoading(true);setMessage("");
    try{
-    const urls:any={overview:"/api/admin/stats",analytics:"/api/admin/orders",orders:"/api/admin/orders",users:"/api/admin/users",wallets:"/api/admin/wallets",catalog:"/api/admin/catalog",payments:"/api/admin/payments",provider:"/api/admin/catalog",audit:"/api/admin/audit",settings:"/api/admin/settings",security:"/api/admin/security",system:"/api/admin/health",security:"/api/admin/security",access:"/api/admin/permissions"};
+    const urls:any={overview:"/api/admin/stats",analytics:"/api/admin/orders",orders:"/api/admin/orders",users:"/api/admin/users",wallets:"/api/admin/wallets",catalog:"/api/admin/catalog",payments:"/api/admin/payments",provider:"/api/admin/catalog",audit:"/api/admin/audit",settings:"/api/admin/settings",security:"/api/admin/security",system:"/api/admin/health",security:"/api/admin/security",access:"/api/admin/permissions",reconciliation:"/api/admin/reconciliation"};
     setData(await request(urls[s]));
    }catch(e){setMessage(e instanceof Error?e.message:"Unable to load admin data")}
    finally{setLoading(false)}
@@ -73,7 +73,7 @@ export default function Admin(){
  return <div className="admin-shell">
   <aside className={mobile?"admin-sidebar open":"admin-sidebar"}>
    <div className="admin-brand"><div className="brand-mark">M</div><div><b>MultiKartX</b><small>ADMIN CONSOLE</small></div><button className="icon-btn mobile-only" onClick={()=>setMobile(false)}><X size={18}/></button></div>
-   <div className="admin-nav">{nav.map(([id,label,sub])=><button key={id} className={section===id?"admin-nav-item active":"admin-nav-item"} onClick={()=>{setSection(id);setMobile(false)}}><span className="nav-icon">{({overview:LayoutDashboard,analytics:BarChart3,orders:ClipboardList,users:Users,wallets:WalletCards,catalog:Boxes,payments:CircleDollarSign,provider:Zap,audit:ShieldCheck,settings:Settings,security:ShieldCheck,system:Database,access:UserCog} as any)[id]({size:18})}</span><span><b>{label}</b><small>{sub}</small></span></button>)}</div>
+   <div className="admin-nav">{nav.map(([id,label,sub])=><button key={id} className={section===id?"admin-nav-item active":"admin-nav-item"} onClick={()=>{setSection(id);setMobile(false)}}><span className="nav-icon">{({overview:LayoutDashboard,analytics:BarChart3,orders:ClipboardList,users:Users,wallets:WalletCards,catalog:Boxes,payments:CircleDollarSign,provider:Zap,audit:ShieldCheck,settings:Settings,security:ShieldCheck,system:Database,access:UserCog,reconciliation:CircleDollarSign} as any)[id]({size:18})}</span><span><b>{label}</b><small>{sub}</small></span></button>)}</div>
    <div className="sidebar-bottom"><div className="secure-pill"><Activity size={15}/> Live system</div><button className="admin-nav-item" onClick={()=>router.push("/")}><LogOut size={18}/><span><b>Exit admin</b><small>Return to app</small></span></button></div>
   </aside>
   {mobile&&<button className="sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Close menu"/>}
@@ -93,7 +93,7 @@ export default function Admin(){
     {section==="users"&&<DataTable title="Customer accounts" rows={filtered} columns={["email","role","balanceKobo","createdAt"]} moneyKeys={["balanceKobo"]} onRole={setRole}/>}
     {section==="wallets"&&<DataTable title="Wallet control" rows={filtered} columns={["email","balanceKobo","updatedAt"]} moneyKeys={["balanceKobo"]} onWallet={(u:any)=>setDrawer({userId:u.userId,type:"credit",amount:"",reason:""})}/>}
     {section==="catalog"&&<Catalog rows={filtered} onToggle={toggleProduct}/>}
-    {section==="payments"&&<Payments funding={funding} transactions={tx} webhooks={webhooks}/>}
+    {section==="payments"&&<Payments funding={funding} transactions={tx} webhooks={webhooks}/>} {section==="reconciliation"&&<Reconciliation data={data}/>}
     {section==="provider"&&<Provider products={rows} onSync={sync}/>}
     {section==="audit"&&<DataTable title="Immutable admin activity" rows={filtered} columns={["adminEmail","action","targetType","targetId","createdAt"]}/>}
     {section==="settings"&&<SettingsPanel data={data.settings||{}} setData={setData} onSave={saveSettings}/>}
@@ -123,3 +123,5 @@ function AccessPanel({data,currentAdminId}:{data:any;currentAdminId?:string}){
  const has=(p:string)=>grants.some((g:any)=>g.userId===adminId&&g.permission===p&&g.granted);
  async function toggle(permission:string){setBusy(permission);try{const r=await fetch("/api/admin/permissions",{method:"PATCH",headers:{"Content-Type":"application/json"},credentials:"include",body:JSON.stringify({userId:adminId,permission,granted:!has(permission)})});const b=await r.json();if(!r.ok)throw new Error(b.error||"Permission update failed");location.reload()}catch(e){alert(e instanceof Error?e.message:"Permission update failed")}finally{setBusy("")}}
  return <div className="panel"><div className="panel-head"><div><h2>Administrator permissions</h2><p>Fine-grained access controls. Every change is audited.</p></div><select className="mini-select" value={adminId} onChange={e=>setAdminId(e.target.value)}>{admins.map((a:any)=><option key={a.id} value={a.id}>{a.email}</option>)}</select></div>{!admins.length?<div className="empty">No administrator accounts found.</div>:<div className="permission-grid">{permissions.map((p:string)=><button key={p} className={has(p)?"permission-card granted":"permission-card"} onClick={()=>toggle(p)} disabled={!!busy}><span>{has(p)?"✓":"○"}</span><div><b>{p}</b><small>{has(p)?"Granted":"Not granted"}</small></div>{busy===p&&<RefreshCw size={14} className="spin" />}</button>)}</div>}</div>}
+
+function Reconciliation({data}:{data:any}){const d=data||{};const r=d.reconciliation||{};return <div className="admin-grid two"><div className="metric-grid compact"><div className="metric-card static"><span className="metric-label">Wallet balance</span><strong>{money(d.wallets?.balanceKobo)}</strong></div><div className="metric-card static"><span className="metric-label">Ledger net</span><strong>{money(d.ledger?.netKobo)}</strong></div><div className="metric-card static"><span className="metric-label">Difference</span><strong>{money(r.walletVsLedgerKobo)}</strong></div><div className="metric-card static"><span className="metric-label">Pending withdrawals</span><strong>{d.withdrawals?.pending??0}</strong></div></div><div className="panel"><div className="panel-head"><div><h2>Settlement integrity</h2><p>Cross-checks live wallet balances against the confirmed ledger.</p></div></div><div className="security-list"><div><ShieldCheck/><span><b>Wallet ↔ ledger</b><small>Expected difference is ₦0.00</small></span><em>{r.balanced?"Balanced":"Review"}</em></div><div><CircleDollarSign/><span><b>Refunds</b><small>{d.refunds?.count??0} completed · {money(d.refunds?.amountKobo)}</small></span><em>Tracked</em></div><div><WalletCards/><span><b>Withdrawals</b><small>{d.withdrawals?.pending??0} pending · {money(d.withdrawals?.pendingAmountKobo)}</small></span><em>Queue</em></div></div></div></div>}
