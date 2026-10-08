@@ -9,3 +9,23 @@ function mask(v:string){return v?(v.length<=8?"••••••••":"••
 export function providerDefinitions(){return P}
 export async function readProviderConfigs(){const rows=await sql`SELECT * FROM provider_configs ORDER BY provider`;return Object.keys(P).map(provider=>{const d=P[provider],r:any=rows.find((x:any)=>x.provider===provider);let s:any={};try{s=r?.secret_json?JSON.parse(dec(r.secret_json)):{}}catch{};return {provider,name:d.name,enabled:r?.enabled??false,baseUrl:r?.base_url||d.baseUrl,publicKey:r?.public_key||"",secrets:Object.fromEntries(d.secrets.map((k:string)=>[k,mask(s[k]||"")])),configured:d.secrets.every((k:string)=>Boolean(s[k])),updatedAt:r?.updated_at||null}})}
 export async function saveProviderConfig(provider:ProviderName,b:any,adminId:string){const d=P[provider];if(!d)throw Error("Unsupported provider");const old:any=(await sql`SELECT secret_json FROM provider_configs WHERE provider=${provider}`)[0];let s:any={};try{s=old?.secret_json?JSON.parse(dec(old.secret_json)):{}}catch{}for(const k of d.secrets)if(typeof b[k]==="string"&&b[k].trim())s[k]=b[k].trim();await sql`INSERT INTO provider_configs(provider,enabled,base_url,public_key,secret_json,updated_by,updated_at) VALUES(${provider},${Boolean(b.enabled)},${String(b.baseUrl||d.baseUrl).trim()},${String(b.publicKey||"").trim()},${enc(JSON.stringify(s))},${adminId},now()) ON CONFLICT(provider) DO UPDATE SET enabled=EXCLUDED.enabled,base_url=EXCLUDED.base_url,public_key=EXCLUDED.public_key,secret_json=EXCLUDED.secret_json,updated_by=EXCLUDED.updated_by,updated_at=now()`}
+export async function getProviderRuntimeConfig(provider:ProviderName){
+  const d=P[provider];
+  if(!d)throw Error("Unsupported provider");
+  const row:any=(await sql`SELECT enabled,base_url,public_key,secret_json FROM provider_configs WHERE provider=${provider} LIMIT 1`)[0];
+  if(row){
+    let secrets:any={};
+    try{secrets=row.secret_json?JSON.parse(dec(row.secret_json)):{};}catch{throw Error("Unable to decrypt provider configuration")}
+    if(!row.enabled)throw Error(`${d.name} is disabled`);
+    return {enabled:true,baseUrl:String(row.base_url||d.baseUrl),publicKey:String(row.public_key||""),secrets};
+  }
+  const env:any={
+    jejelaye:{apiToken:process.env.JEJELAYE_API_TOKEN||""},
+    paystack:{secretKey:process.env.PAYSTACK_SECRET_KEY||""},
+    flutterwave:{secretKey:process.env.FLUTTERWAVE_SECRET_KEY||"",encryptionKey:process.env.FLUTTERWAVE_ENCRYPTION_KEY||""},
+    monnify:{apiKey:process.env.MONNIFY_API_KEY||"",secretKey:process.env.MONNIFY_SECRET_KEY||""},
+    resend:{apiKey:process.env.RESEND_API_KEY||""},
+    termii:{apiKey:process.env.TERMII_API_KEY||""}
+  };
+  return {enabled:true,baseUrl:d.baseUrl,publicKey:"",secrets:env[provider]||{}};
+}
