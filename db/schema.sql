@@ -11,3 +11,8 @@ CREATE TABLE IF NOT EXISTS webhook_events(id uuid PRIMARY KEY DEFAULT gen_random
 CREATE TABLE IF NOT EXISTS admin_audit_logs(id uuid PRIMARY KEY DEFAULT gen_random_uuid(),admin_user_id uuid NOT NULL REFERENCES users(id),action text NOT NULL,target_type text,target_id text,details_json jsonb NOT NULL DEFAULT '{}'::jsonb,ip_address text,created_at timestamptz NOT NULL DEFAULT now());
 CREATE INDEX IF NOT EXISTS admin_audit_logs_created_idx ON admin_audit_logs(created_at DESC);
 CREATE INDEX IF NOT EXISTS admin_audit_logs_admin_idx ON admin_audit_logs(admin_user_id,created_at DESC);
+
+CREATE TABLE IF NOT EXISTS admin_settings(key text PRIMARY KEY,value text NOT NULL DEFAULT '',updated_by uuid REFERENCES users(id),updated_at timestamptz NOT NULL DEFAULT now());
+INSERT INTO admin_settings(key,value) VALUES
+('platformName','MultiKartX'),('markupPercent','0'),('lowFloatThreshold','50000'),('criticalFloatThreshold','10000'),('alertEmail',''),('alertPhone',''),('maintenanceMode','false')
+ON CONFLICT(key) DO NOTHING;
