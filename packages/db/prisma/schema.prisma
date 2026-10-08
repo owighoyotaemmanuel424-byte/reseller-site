@@ -359,7 +359,7 @@ model RefundRecord {
   orderId     String    @unique
   order       Order     @relation(fields: [orderId], references: [id])
   userId      String
-  user        User      @relation(fields: [userId], references: [id])
+  user        User      @relation("RefundUser", fields: [userId], references: [id])
   amountKobo  BigInt
   reason      String
   reference   String    @unique
