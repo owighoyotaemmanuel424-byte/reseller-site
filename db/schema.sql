@@ -26,3 +26,30 @@ CREATE TABLE IF NOT EXISTS admin_permissions(
   PRIMARY KEY(admin_user_id,permission)
 );
 CREATE INDEX IF NOT EXISTS admin_permissions_permission_idx ON admin_permissions(permission,granted);
+
+CREATE TABLE IF NOT EXISTS refund_records(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  order_id uuid UNIQUE NOT NULL REFERENCES orders(id),
+  user_id uuid NOT NULL REFERENCES users(id),
+  amount_kobo bigint NOT NULL CHECK(amount_kobo > 0),
+  reason text NOT NULL,
+  reference text UNIQUE NOT NULL,
+  status text NOT NULL DEFAULT 'completed',
+  created_by uuid NOT NULL REFERENCES users(id),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS refund_records_user_idx ON refund_records(user_id,created_at DESC);
+
+CREATE TABLE IF NOT EXISTS withdrawal_requests(
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL REFERENCES users(id),
+  amount_kobo bigint NOT NULL CHECK(amount_kobo > 0),
+  destination text NOT NULL,
+  reference text UNIQUE NOT NULL,
+  status text NOT NULL DEFAULT 'pending',
+  note text,
+  processed_by uuid REFERENCES users(id),
+  processed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+CREATE INDEX IF NOT EXISTS withdrawal_requests_status_idx ON withdrawal_requests(status,created_at DESC);
