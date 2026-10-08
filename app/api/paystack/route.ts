@@ -61,7 +61,7 @@ export async function PUT(req: Request) {
     }
 
     const verify = await fetch(c.api + "/transaction/verify/" + encodeURIComponent(reference), {
-      headers: { Authorization: "Bearer " + key() },
+      headers: { Authorization: "Bearer " + c.key },
       signal: AbortSignal.timeout(20000),
     });
     const p = await verify.json();
