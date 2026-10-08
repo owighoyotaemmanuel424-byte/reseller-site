@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="education" title="Education" description="Purchase currently available education products and PIN services."/>}
