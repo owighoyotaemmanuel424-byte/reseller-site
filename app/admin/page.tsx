@@ -8,14 +8,14 @@ import {
   ShieldCheck, SlidersHorizontal, UserCog, Users, WalletCards, X, Zap
 } from "lucide-react";
 
-type Section = "overview"|"analytics"|"orders"|"users"|"wallets"|"catalog"|"payments"|"provider"|"audit"|"settings"|"security"|"system";
+type Section = "overview"|"analytics"|"orders"|"users"|"wallets"|"catalog"|"payments"|"provider"|"audit"|"settings"|"security"|"system"|"access";
 const money=(n:unknown)=>"₦"+(Number(n||0)/100).toLocaleString("en-NG",{minimumFractionDigits:2});
 const date=(v:unknown)=>v?new Date(String(v)).toLocaleString():"—";
 
 const nav:[Section,string,string][]=[
  ["overview","Overview","Command center"],["analytics","Analytics","Revenue & activity"],["orders","Orders","Fulfillment queue"],
  ["users","Users","Customers & access"],["wallets","Wallets","Balances & adjustments"],["catalog","Catalog","Products & markup"],
- ["payments","Payments","Funding & ledger"],["provider","Provider","JejeLaye health"],["audit","Audit log","Admin activity"],["settings","Settings","Platform controls"],["security","Security","Access & protection"],["system","System health","Runtime diagnostics"]
+ ["payments","Payments","Funding & ledger"],["provider","Provider","JejeLaye health"],["audit","Audit log","Admin activity"],["settings","Settings","Platform controls"],["security","Security","Access & protection"],["system","System health","Runtime diagnostics"],["access","Admin access","Roles & permissions"]
 ];
 
 export default function Admin(){
@@ -39,7 +39,7 @@ export default function Admin(){
  async function load(s:Section=section){
    setLoading(true);setMessage("");
    try{
-    const urls:any={overview:"/api/admin/stats",analytics:"/api/admin/orders",orders:"/api/admin/orders",users:"/api/admin/users",wallets:"/api/admin/wallets",catalog:"/api/admin/catalog",payments:"/api/admin/payments",provider:"/api/admin/catalog",audit:"/api/admin/audit",settings:"/api/admin/settings",security:"/api/admin/security",system:"/api/admin/health",security:"/api/admin/security",system:"/api/admin/health"};
+    const urls:any={overview:"/api/admin/stats",analytics:"/api/admin/orders",orders:"/api/admin/orders",users:"/api/admin/users",wallets:"/api/admin/wallets",catalog:"/api/admin/catalog",payments:"/api/admin/payments",provider:"/api/admin/catalog",audit:"/api/admin/audit",settings:"/api/admin/settings",security:"/api/admin/security",system:"/api/admin/health",security:"/api/admin/security",access:"/api/admin/permissions"};
     setData(await request(urls[s]));
    }catch(e){setMessage(e instanceof Error?e.message:"Unable to load admin data")}
    finally{setLoading(false)}
@@ -73,7 +73,7 @@ export default function Admin(){
  return <div className="admin-shell">
   <aside className={mobile?"admin-sidebar open":"admin-sidebar"}>
    <div className="admin-brand"><div className="brand-mark">M</div><div><b>MultiKartX</b><small>ADMIN CONSOLE</small></div><button className="icon-btn mobile-only" onClick={()=>setMobile(false)}><X size={18}/></button></div>
-   <div className="admin-nav">{nav.map(([id,label,sub])=><button key={id} className={section===id?"admin-nav-item active":"admin-nav-item"} onClick={()=>{setSection(id);setMobile(false)}}><span className="nav-icon">{({overview:LayoutDashboard,analytics:BarChart3,orders:ClipboardList,users:Users,wallets:WalletCards,catalog:Boxes,payments:CircleDollarSign,provider:Zap,audit:ShieldCheck,settings:Settings} as any)[id]({size:18})}</span><span><b>{label}</b><small>{sub}</small></span></button>)}</div>
+   <div className="admin-nav">{nav.map(([id,label,sub])=><button key={id} className={section===id?"admin-nav-item active":"admin-nav-item"} onClick={()=>{setSection(id);setMobile(false)}}><span className="nav-icon">{({overview:LayoutDashboard,analytics:BarChart3,orders:ClipboardList,users:Users,wallets:WalletCards,catalog:Boxes,payments:CircleDollarSign,provider:Zap,audit:ShieldCheck,settings:Settings,security:ShieldCheck,system:Database,access:UserCog} as any)[id]({size:18})}</span><span><b>{label}</b><small>{sub}</small></span></button>)}</div>
    <div className="sidebar-bottom"><div className="secure-pill"><Activity size={15}/> Live system</div><button className="admin-nav-item" onClick={()=>router.push("/")}><LogOut size={18}/><span><b>Exit admin</b><small>Return to app</small></span></button></div>
   </aside>
   {mobile&&<button className="sidebar-overlay" onClick={()=>setMobile(false)} aria-label="Close menu"/>}
@@ -113,3 +113,13 @@ function Provider({products,onSync}:{products:any[];onSync:()=>void}){const acti
 function SecurityPanel({data}:{data:any}){return <div className="admin-grid two"><div className="panel"><div className="panel-head"><div><h2>Access security</h2><p>Current administrative protection status</p></div></div><div className="security-list"><div><ShieldCheck/><span><b>Admin session</b><small>Server-side authenticated admin session</small></span><em>{data.sessionProtected?"Protected":"Unknown"}</em></div><div><UserCog/><span><b>Role enforcement</b><small>Administrative mutations require admin access</small></span><em>Enabled</em></div><div><ClipboardList/><span><b>Audit logging</b><small>Mutation events are persisted for review</small></span><em>Enabled</em></div></div></div><div className="panel"><div className="panel-head"><div><h2>Security events</h2><p>Recent administrative activity</p></div></div><div className="security-list">{(data.events||[]).slice(0,8).map((e:any)=><div key={e.id}><Activity/><span><b>{e.action}</b><small>{e.adminEmail||"Admin"} · {date(e.createdAt)}</small></span></div>)}</div></div></div>}
 function SystemPanel({data}:{data:any}){return <div className="admin-grid two"><div className="panel"><div className="panel-head"><div><h2>System health</h2><p>Live application dependencies</p></div></div><div className="security-list">{Object.entries(data.health||{}).map(([k,v]:any)=><div key={k}><Database/><span><b>{k}</b><small>{typeof v==="object"?JSON.stringify(v):String(v)}</small></span><em>Checked</em></div>)}</div></div><div className="panel"><div className="panel-head"><div><h2>Runtime</h2><p>Operational environment</p></div></div><div className="security-list"><div><Zap/><span><b>Application</b><small>MultiKartX Admin</small></span><em>Online</em></div><div><Database/><span><b>Database</b><small>Neon PostgreSQL</small></span><em>Online</em></div><div><Activity/><span><b>Catalog</b><small>Provider-backed product records</small></span><em>Live</em></div></div></div></div>}
 function SettingsPanel({data,setData,onSave}:{data:any;setData:(x:any)=>void;onSave:()=>void}){const update=(k:string,v:string)=>setData((d:any)=>({...d,settings:{...(d.settings||{}),[k]:v}}));return <div className="panel settings-panel"><div className="panel-head"><div><h2>Platform settings</h2><p>Operational values stored securely in the admin settings table.</p></div></div><div className="settings-grid">{[["platformName","Platform name"],["markupPercent","Default markup (%)"],["lowFloatThreshold","Low float threshold (₦)"],["criticalFloatThreshold","Critical float threshold (₦)"],["alertEmail","Alert email"],["alertPhone","Alert phone"],["maintenanceMode","Maintenance mode (true/false)"]].map(([k,l])=><label key={k}>{l}<input value={data[k]??""} onChange={e=>update(k,e.target.value)}/></label>)}</div><button className="btn" onClick={onSave}>Save platform settings</button></div>}
+
+function AccessPanel({data,currentAdminId}:{data:any;currentAdminId?:string}){
+ const admins=Array.isArray(data?.admins)?data.admins:[];
+ const permissions=Array.isArray(data?.permissions)?data.permissions:[];
+ const grants=Array.isArray(data?.grants)?data.grants:[];
+ const [adminId,setAdminId]=useState(currentAdminId||admins[0]?.id||"");
+ const [busy,setBusy]=useState("");
+ const has=(p:string)=>grants.some((g:any)=>g.userId===adminId&&g.permission===p&&g.granted);
+ async function toggle(permission:string){setBusy(permission);try{const r=await fetch("/api/admin/permissions",{method:"PATCH",headers:{"Content-Type":"application/json"},credentials:"include",body:JSON.stringify({userId:adminId,permission,granted:!has(permission)})});const b=await r.json();if(!r.ok)throw new Error(b.error||"Permission update failed");location.reload()}catch(e){alert(e instanceof Error?e.message:"Permission update failed")}finally{setBusy("")}}
+ return <div className="panel"><div className="panel-head"><div><h2>Administrator permissions</h2><p>Fine-grained access controls. Every change is audited.</p></div><select className="mini-select" value={adminId} onChange={e=>setAdminId(e.target.value)}>{admins.map((a:any)=><option key={a.id} value={a.id}>{a.email}</option>)}</select></div>{!admins.length?<div className="empty">No administrator accounts found.</div>:<div className="permission-grid">{permissions.map((p:string)=><button key={p} className={has(p)?"permission-card granted":"permission-card"} onClick={()=>toggle(p)} disabled={!!busy}><span>{has(p)?"✓":"○"}</span><div><b>{p}</b><small>{has(p)?"Granted":"Not granted"}</small></div>{busy===p&&<RefreshCw size={14} className="spin" />}</button>)}</div>}</div>}
