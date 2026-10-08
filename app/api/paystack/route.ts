@@ -80,39 +80,33 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Payment mismatch" }, { status: 400 });
     }
 
-    const claimed = await sql`
-      UPDATE funding_requests
-      SET status='completed', completed_at=now()
-      WHERE id=${reqs.id} AND status='pending'
-      RETURNING amount_kobo
+    const settled = await sql`
+      WITH claim AS (
+        UPDATE funding_requests
+        SET status='completed', completed_at=now()
+        WHERE id=${reqs.id} AND status='pending'
+        RETURNING user_id,amount_kobo
+      ), wallet AS (
+        UPDATE wallets w
+        SET balance_kobo=w.balance_kobo+c.amount_kobo,updated_at=now()
+        FROM claim c
+        WHERE w.user_id=c.user_id
+        RETURNING w.id,w.user_id,c.amount_kobo
+      ), tx AS (
+        UPDATE wallet_transactions
+        SET status='confirmed',description='Paystack wallet funding confirmed'
+        WHERE reference=${reference} AND status='pending'
+        RETURNING id
+      ), ledger AS (
+        INSERT INTO wallet_ledger(user_id,wallet_id,type,amount_kobo,currency,status,reference,description)
+        SELECT user_id,id,'credit',amount_kobo,'NGN','confirmed',${reference},'Paystack wallet funding'
+        FROM wallet
+        ON CONFLICT(reference) DO NOTHING
+        RETURNING id
+      ) SELECT (SELECT COUNT(*) FROM claim)::int claimed,(SELECT COUNT(*) FROM wallet)::int wallet
     `;
-
-    if (!claimed[0]) {
-      return NextResponse.json({ ok: true, reference, alreadyProcessed: true });
-    }
-
-    const wallet = await sql`
-      UPDATE wallets
-      SET balance_kobo=balance_kobo+${claimed[0].amount_kobo}, updated_at=now()
-      WHERE user_id=${u.id}
-      RETURNING id
-    `;
-
-    if (!wallet[0]) {
-      await sql`UPDATE funding_requests SET status='pending', completed_at=NULL WHERE id=${reqs.id}`;
-      return NextResponse.json({ error: "Wallet not found" }, { status: 500 });
-    }
-
-    await sql`
-      UPDATE wallet_transactions
-      SET status='confirmed', description='Paystack wallet funding confirmed'
-      WHERE reference=${reference} AND status='pending'
-    `;
-    await sql`
-      INSERT INTO wallet_ledger(user_id,wallet_id,type,amount_kobo,currency,status,reference)
-      VALUES(${u.id},${wallet[0].id},'credit',${claimed[0].amount_kobo},'NGN','confirmed',${reference})
-      ON CONFLICT(reference) DO NOTHING
-    `;
+    if(Number(settled[0]?.claimed||0)===0)return NextResponse.json({ok:true,reference,alreadyProcessed:true});
+    if(Number(settled[0]?.wallet||0)===0)return NextResponse.json({error:"Wallet not found"},{status:500});
 
     return NextResponse.json({ ok: true, reference });
   } catch (error) {
