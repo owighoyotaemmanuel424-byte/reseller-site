@@ -2,10 +2,7 @@
   "name": "multikartx",
   "version": "1.0.0",
   "private": true,
-  "workspaces": [
-    "apps/*",
-    "packages/*"
-  ],
+  "packageManager": "pnpm@10.15.0",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -13,8 +10,8 @@
     "typecheck": "tsc --noEmit",
     "lint": "eslint .",
     "db:init": "node scripts/db-init.mjs",
-    "cf:build": "npm run build && opennextjs-cloudflare build",
-    "cf:deploy": "npm run cf:build && wrangler deploy"
+    "cf:build": "pnpm build && opennextjs-cloudflare build",
+    "cf:deploy": "pnpm cf:build && wrangler deploy"
   },
   "dependencies": {
     "@neondatabase/serverless": "^1.0.2",
