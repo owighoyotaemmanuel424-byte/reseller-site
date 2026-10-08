@@ -1,0 +1,5 @@
+import {NextResponse} from "next/server";
+import {requireAdminPermission,audit} from "@/lib/admin";
+import {providerDefinitions,readProviderConfigs,saveProviderConfig,type ProviderName} from "@/lib/provider-config";
+export async function GET(){const u=await requireAdminPermission("settings.manage");if(!u)return NextResponse.json({error:"Admin access required"},{status:403});return NextResponse.json({providers:await readProviderConfigs()})}
+export async function PATCH(req:Request){const u=await requireAdminPermission("settings.manage");if(!u)return NextResponse.json({error:"Admin access required"},{status:403});const b=await req.json().catch(()=>null),p=String(b?.provider||"") as ProviderName;if(!Object.keys(providerDefinitions()).includes(p))return NextResponse.json({error:"Unsupported provider"},{status:400});try{await saveProviderConfig(p,b,u.id);await audit(u.id,"provider.config.updated","provider",p,{provider:p});return NextResponse.json({providers:await readProviderConfigs()})}catch(e){return NextResponse.json({error:e instanceof Error?e.message:"Provider configuration failed"},{status:400})}}
