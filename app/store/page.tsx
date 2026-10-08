@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="marketplace" title="Store" description="Browse active digital products synchronized from configured providers."/>}
