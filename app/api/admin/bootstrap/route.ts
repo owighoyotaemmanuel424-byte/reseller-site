@@ -27,6 +27,11 @@ export async function POST(req: Request) {
   }
 
   const email = data.email.toLowerCase();
+  const existingAdmin = await sql`SELECT id FROM users WHERE role = 'admin' LIMIT 1`;
+  if (existingAdmin[0]) {
+    return NextResponse.json({ error: "Admin setup has already been completed. Use the admin login." }, { status: 409 });
+  }
+
   const existing = await sql`SELECT id, role FROM users WHERE email = ${email} LIMIT 1`;
 
   if (existing[0]) {
