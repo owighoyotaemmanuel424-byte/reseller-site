@@ -2,9 +2,9 @@ import { NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { sql } from "@/lib/db";
 import { randomUUID } from "node:crypto";
+import { getProviderRuntimeConfig } from "@/lib/provider-config";
 
-const key = () => process.env.PAYSTACK_SECRET_KEY || "";
-const api = "https://api.paystack.co";
+async function config(){const c=await getProviderRuntimeConfig("paystack");const key=String(c.secrets.secretKey||"");if(!key)throw Error("Paystack API key is not configured in Admin → Provider Configuration");return{key,api:(c.baseUrl||"https://api.paystack.co").replace(/\/$/,"")}}
 
 export async function POST(req: Request) {
   const u = await getCurrentUser();
@@ -15,7 +15,7 @@ export async function POST(req: Request) {
     if (!Number.isSafeInteger(amountKobo) || amountKobo < 100) {
       throw new Error("Minimum funding is ₦1");
     }
-    if (!key()) throw new Error("PAYSTACK_SECRET_KEY is not configured");
+    const c = await config();
 
     const reference = "MKX-" + randomUUID();
     await sql`
@@ -27,9 +27,9 @@ export async function POST(req: Request) {
       VALUES(${u.id},'credit',${amountKobo},'Paystack wallet funding',${reference},'pending')
     `;
 
-    const r = await fetch(api + "/transaction/initialize", {
+    const r = await fetch(c.api + "/transaction/initialize", {
       method: "POST",
-      headers: { Authorization: "Bearer " + key(), "Content-Type": "application/json" },
+      headers: { Authorization: "Bearer " + c.key, "Content-Type": "application/json" },
       body: JSON.stringify({
         email: u.email,
         amount: String(amountKobo),
@@ -51,7 +51,8 @@ export async function POST(req: Request) {
 export async function PUT(req: Request) {
   const u = await getCurrentUser();
   if (!u) return NextResponse.json({ error: "Authentication required" }, { status: 401 });
-  if (!key()) return NextResponse.json({ error: "PAYSTACK_SECRET_KEY is not configured" }, { status: 503 });
+  let c: Awaited<ReturnType<typeof config>>;
+  try { c = await config(); } catch (e) { return NextResponse.json({ error: e instanceof Error ? e.message : "Paystack is not configured" }, { status: 503 }); }
 
   try {
     const { reference } = await req.json();
@@ -59,7 +60,7 @@ export async function PUT(req: Request) {
       return NextResponse.json({ error: "Invalid payment reference" }, { status: 400 });
     }
 
-    const verify = await fetch(api + "/transaction/verify/" + encodeURIComponent(reference), {
+    const verify = await fetch(c.api + "/transaction/verify/" + encodeURIComponent(reference), {
       headers: { Authorization: "Bearer " + key() },
       signal: AbortSignal.timeout(20000),
     });
