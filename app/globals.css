@@ -139,3 +139,14 @@ th,td { text-align:left; padding:12px 8px; border-bottom:1px solid var(--line); 
   .admin-heading .eyebrow{font-size:9px}
   .btn{min-height:40px}
 }
+
+.customer-modal{max-width:680px}
+.customer-modal> .modal-head small{color:#667085}
+.customer-list{margin-top:18px}
+.customer-list h3{font-size:12px;margin:18px 0 8px;color:#475467;text-transform:uppercase;letter-spacing:.06em}
+.customer-list>div:not(.empty){display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 0;border-bottom:1px solid #eef0f4}
+.customer-list span{min-width:0}.customer-list b,.customer-list small{display:block}
+.customer-list b{font-size:12px;color:#101828;overflow:hidden;text-overflow:ellipsis}
+.customer-list small{font-size:10px;color:#98a2b3;margin-top:3px}
+.customer-list strong{font-size:12px;white-space:nowrap}
+@media(max-width:850px){.customer-modal{max-height:90vh}.customer-list{max-height:48vh;overflow:auto}}
