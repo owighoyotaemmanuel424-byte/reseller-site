@@ -1,0 +1,1 @@
+import ServiceMarketplace from "@/components/ServiceMarketplace"; export default function Page(){return <ServiceMarketplace type="esim" title="eSIM" description="Only live provider eSIM packages are displayed."/>
